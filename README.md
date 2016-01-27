@@ -9,11 +9,11 @@ Crawler is a highly flexible PHP web crawler library with a few cool features.
  - Saves body text with all HTML stripped for easy searching.
 
 ### Usage
- 1) Download and unzip the source files.
- 2) Open /crawler/config.php and add your configuration details. (see below)
- 3) Upload the files to your server and run
- 4) To start crawling, run doCrawl.php in your in your browser or console, or to continue crawling indefinitely, open search.php in the browser and click the “crawl” button in the top right.
- 5) After you’ve crawled some pages you can search the results via the search.php script.
+ 1. Download and unzip the source files.
+ 2. Open /crawler/config.php and add your configuration details. (see below)
+ 3. Upload the files to your server and run
+ 4. To start crawling, run doCrawl.php in your in your browser or console, or to continue crawling indefinitely, open search.php in the browser and click the “crawl” button in the top right.
+ 5. After you’ve crawled some pages you can search the results via the search.php script.
 
 ### Configuration
 The crawler/config.php file needs to be populated before trying to crawl any websites. This is an explanation of the options.
