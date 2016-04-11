@@ -18,51 +18,11 @@
 ############################## AJAX STUFF ######################################
 ################################################################################
 
-function getSummary($str, $term){
-    $start = strpos($str, $term); 
-    return substr($str, $start, 150);
-}
-
-if(isset($_POST['action'])){
-	
-	// require the crawler
-	require_once("crawler/autoload.php");
-
-	switch($_POST['action']){
-		case "search":
-			
-			$pdo = new PDO(
-				'mysql:host='.$CrawlerConfig['PDO_CONFIG']['HOST'].';'.
-				'dbname='.$CrawlerConfig['PDO_CONFIG']['DB'].';'.
-				'charset=utf8', 
-				$CrawlerConfig['PDO_CONFIG']['USER'], 
-				$CrawlerConfig['PDO_CONFIG']['PASS']
-			);
-			
-			$q = $pdo->prepare("SELECT * FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE body LIKE :t OR title LIKE :t");
-			$q->execute(array(":t"=>"%{$_POST['term']}%"));
-			
-			$return = array();
-			
-			while($res = $q->fetch(PDO::FETCH_ASSOC)){
-				$a = array();
-				$a['url'] = $res['url'];
-				$a['title'] = str_replace($_POST['term'], "<b>{$_POST['term']}</b>", $res['title']);
-				$a['body'] = str_replace($_POST['term'], "<b>{$_POST['term']}</b>", getSummary($res['body'], $_POST['term']));
-				array_push($return, $a);
-			}
-			
-			echo json_encode($return);
-			exit;
-			
-			break;
-		case "crawl":
-			
-			break;
-		default:
-			die("Invalid action");
-	}
-	
+if(isset($_POST['action']) && $_POST['action'] == "search"){
+	require realpath(dirname(__FILE__))."/crawler/autoload.php";
+	$return = CrawlerPDO::doSearch($_POST['term']);
+	echo json_encode($return);
+	exit;
 }
 
 ################################################################################
@@ -79,12 +39,72 @@ if(isset($_POST['action'])){
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="Search Crawler Results">
         <meta name="author" content="Rob Parham">
-        <title>Search Rockwell</title>
+        <title>Crawler Search</title>
         
         <!-- styles -->
         <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
         <style>
             body { padding-top: 70px; /* adjust for the navbar */ }
+			.resdiv:hover{
+				border-left:2px solid blue;
+				padding-left:8px;
+			}
+			.resdiv{
+				border-left:0;
+				padding-left:10px;
+				padding-bottom: 25px;
+			}
+			@-moz-font-face { 
+				font-family: Catull; 
+				src: url(../font/Catull.ttf); 
+				font-weight:400; 
+			}
+			@-webkit-font-face { 
+				font-family: Catull; 
+				src: url(../font/Catull.ttf); 
+				font-weight:400; 
+			}
+			@-o-font-face { 
+				font-family: Catull; 
+				src: url(../font/Catull.ttf); 
+				font-weight:400; 
+			}
+			@-ms-font-face { 
+				font-family: Catull; 
+				src: url(../font/Catull.ttf); 
+				font-weight:400; 
+			}
+			@font-face { 
+				font-family: Catull; 
+				src: url(../font/Catull.ttf); 
+				font-weight:400; 
+			}
+			.google-logo {
+				font-family: Catull,Sans-Serif;
+				font-size: 50px;
+			}
+			.google-logo-sm {
+				font-family: Catull,Sans-Serif;
+				font-size: 25px;
+			}
+			.google-G { 
+				color:#0047F1; 
+			}
+			.google-o1 { 
+				color:#DD172C; 
+			}
+			.google-o2 { 
+				color:#F9A600; 
+			}
+			.google-g { 
+				color:#0047F1; 
+			}
+			.google-l { 
+				color:#00930E; 
+			}
+			.google-e { 
+				color:#E61B31; 
+			}
         </style>
         
         <!-- HTML5 Shim and Respond.js -->
@@ -93,13 +113,17 @@ if(isset($_POST['action'])){
         <script src="//oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
     </head>
-    <body style='background:#fafcdf;'>
+    <body style='background:#fff;'>
         
         <!-- navbar -->
-        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation" style="background:#195a8b;">
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation" style="background:#F1F1F1; border:0;">
             <div class="container">
                 <div class="navbar-header">
-                    <a class="navbar-brand" href="#">Search Crawler Results</a>
+                    <a class="navbar-brand" href="#">
+						<span class="google-logo-sm">
+							<span class="google-G">C</span><span class="google-o1">r</span><span class="google-o2">a</span><span class="google-g">w</span><span class="google-l">l</span><span class="google-e">e</span><span class="google-o2">r</span>
+						</span>
+					</a>
                 </div>
             </div>
         </nav>
@@ -108,38 +132,64 @@ if(isset($_POST['action'])){
         <div class="container">
             <div class="row">
                 <div class="col-lg-12 text-center">
-                    <img src="//rockwell.ourtownamerica.com/images/intra/ot_home_logo_new.jpg" />
+					
+					<span class="google-logo">
+						<span class="google-G">C</span><span class="google-o1">r</span><span class="google-o2">a</span><span class="google-g">w</span><span class="google-l">l</span><span class="google-e">e</span><span class="google-o2">r</span>
+					</span>
+					
                 </div>
             </div>
 			
 			<div class="row">
                 <div class="col-lg-12">
 					<center>
-						<h3>Search Crawler Results</h3>
-						<div class="input-group">
-							<form method='POST' id='sform' action='search.php' style='display:block'>
+						
+						<form method='POST' id='sform' action='search.php' style='display:block'>
+
+
+							<div class="input-group">
 								<input type="text" class="form-control" id='sinput' placeholder="Search for...">
 								<span class="input-group-btn">
-									<button class="btn btn-default" type="submit" id="sbtn">Go!</button>
+									<button class="btn btn-default btn-primary" type="submit" id="sbtn"><span class="glyphicon glyphicon-search"></span></button>
 								</span>
-							</form>
-						</div>
+
+							</div>
+							<small style="float:right; padding-top:5px;">Press Enter to Search</small>
+						</form>
+						<Br>
 					</center>
 					<div id='results'></div>
                 </div>
             </div>
         </div>
-        
-		<div style='position:fixed; top: 0; right:0; z-index:9999999999999999999999999999999999; padding:2em; background: rgba(200,200,200,0.7)'>
-			<button type="button" class="btn btn-primary" id='cbtn'>Start Crawl</button>
-		</div>
 		
         <!-- javascripts -->
         <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
         <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 		<script>
+			
+		function getParameterByName(name, url) {
+			if (!url) url = window.location.href;
+			name = name.replace(/[\[\]]/g, "\\$&");
+			var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)", "i"),
+				results = regex.exec(url);
+			if (!results) return null;
+			if (!results[2]) return '';
+			return decodeURIComponent(results[2].replace(/\+/g, " "));
+		}
+		
+		function strip(html){
+		   var tmp = document.createElement("DIV");
+		   tmp.innerHTML = html;
+		   return tmp.textContent || tmp.innerText || "";
+		}
+
 		$(document).ready(function(){
+			
 			$("#sform").submit(function(e){
+				if($("#sinput").val() == "") return false;
+				var d = new Date();
+				var starttime = d.getMilliseconds(); 
 				e.preventDefault();
 				var term = $("#sinput").val();
 				$("#sbtn").html("loading..");
@@ -150,31 +200,28 @@ if(isset($_POST['action'])){
 				}).done(function(r){
 					r = JSON.parse(r);
 					var item, div;
+					
+					var ee = new Date();
+					var stoptime = ee.getMilliseconds(); 
+					var seconds = Math.abs(stoptime - starttime) / 1000;
+					var totalSeconds = Math.round(seconds * 100) / 100;
+					
 					$("#results").empty();
+					$("#results").append("<div> About "+r.length+" results ("+totalSeconds+" seconds)</div><br>");
 					for(var i=0; i<r.length; i++){
 						item = r[i];
-						div = $("<div><a href='"+item['url']+"'><big><span class='glyphicon glyphicon-link'></span> "+item['title']+"</big></a><br><small><i>"+item['url']+"</i></small><div>"+item['body']+"</div></div><hr>");
+						div = $("<div class='resdiv'><a href='"+strip(item['url'])+"' style='color: blue'><big>"+item['title']+"</big></a> <small><span class='glyphicon glyphicon-signal' style='color:red'></span> Relevance Score: "+item['match_score']+"</small><br><a href='"+strip(item['url'])+"' style='color: green'><small><span class='glyphicon glyphicon-link'></span> <i>"+item['url']+"</i></small></a><div>"+item['body']+"</div></div>");
 						$("#results").append(div);
 					}
-					$("#sbtn").html("Go!");
+					$("#sbtn").html('<span class="glyphicon glyphicon-search"></span>');
 				});
 			});
 			
-			$(window).data("crawling", false);
-			$("#cbtn").click(function doCrawl(e){
-				if(typeof e != 'undefined') e.preventDefault();
-				$(window).data("crawling", !$(window).data("crawling"));
-				
-				$("#cbtn").html($(window).data("crawling") ? "Stop Crawl" : "Start Crawl");
-				
-				$.ajax({
-					url:"doCrawl.php",
-					type:"post",
-					data: {}
-				}).done(function(r){
-					if($(window).data("crawling")) doCrawl();
-				});
-			});
+			var q = getParameterByName("q");
+			if(q && q.length > 0){
+				$("#sinput").val(q)
+				$("#sform").submit();
+			}
 			
 		});	
 		</script>

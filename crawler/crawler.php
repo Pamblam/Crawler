@@ -44,13 +44,20 @@ class Crawler {
 	 */
 	private $queue = array();
 	
+	/* What time was it instatiated
+	 */
+	private $started = 0;
+	
+	/* How many seconds to wait
+	 */
+	private $timelimit = 0;
 	
 	/* Returns the Crawler object
 	 */
-	public static function getInstance(){
+	public static function getInstance($seconds = 15){
         if (empty(self::$instance)){
 			$class = __CLASS__;
-            self::$instance = new $class;
+            self::$instance = new $class($seconds);
         }
         return self::$instance;
     }
@@ -60,11 +67,15 @@ class Crawler {
 	 * Constructor - sets configuration
 	 * @global type $CrawlerConfig
 	 */
-	private function __construct() {
+	private function __construct($seconds) {
 		
 		// Set the config property
 		global $CrawlerConfig;
 		$this->config = $CrawlerConfig;
+		
+		$this->started = time();
+		$this->timelimit = $seconds;
+		
 		
 		// Start a session
 		if( !empty($this->config['AUTH']) && 
@@ -91,7 +102,7 @@ class Crawler {
 		
 		// Dump the output if that option is set
 		if($this->dumpOutput){
-			echo $this->formattedOutput ? "<pre style='display:block;'>$str</pre>" : "$str";
+			echo $this->formattedOutput ? "<pre style='display:block;'>$str</pre>" : "$str\n";
 		}
 	}
 	
@@ -136,6 +147,22 @@ class Crawler {
 		// Begin the loop through each URL row
 		foreach($this->queue as $k=>$page){
 			
+			// Make sure it's a crawlable format
+			$ctype = CrawlerRequest::getContentType($page['url']);
+			if(strpos($ctype, "text/") === false){
+				$bn = array_pop(explode("/", $page['url'])); 
+				$this->addOutput("Skipping $bn - ($ctype).");
+				// Update the record for the page we just crawled
+				CrawlerPDO::updateRow(array(
+					"title" => $page['title'],
+					"url" => $page['url'],
+					"body" => "skipped",
+					"depth" => CrawlerPDO::getDepthOfUrl($page['url']),
+					"crawled" => 1
+				));
+				continue;
+			}
+			
 			// Get the depth of the current item
 			$depth = CrawlerPDO::getDepthOfUrl($page['url']);
 			
@@ -145,9 +172,13 @@ class Crawler {
 			// Get an new instance of our HTML parser
 			$parser = new CrawlerParser($body, $page['url']);
 			
+			// Add images to database
+			$images = $parser->getImages();
+			CrawlerPDO::addImages($images, $page['url']);
+			
 			// Download images if configured
 			if($this->config['SAVE_IMAGES'] === true){
-				$images = $parser->getImages();
+				
 				foreach($images as $image){
 					
 					// Check download size
@@ -192,8 +223,6 @@ class Crawler {
 			// Loop thru and check and update or insert each new link
 			foreach($crawlResult['links'] as $link){
 				
-				
-				
 				// If the URL was already discovered
 				if(CrawlerPDO::URLDiscovered($link['url'])){
 					CrawlerPDO::updateRow(array(
@@ -235,6 +264,11 @@ class Crawler {
 		// Queue is empty!
 		// Incremenent the depth counter
 		$current_depth++;
+		
+		if(time() > ($this->started+$this->timelimit) && $this->timelimit > 0){
+			$this->addOutput("Ran for ".(time()-$this->started)." seconds, timeout set to ".$this->timelimit.".");
+			return;
+		}
 		
 		// Refresh the queue and keep going?
 		if($max_depth == 0 || $max_depth > $current_depth){

@@ -17,7 +17,7 @@ $GLOBALS['CrawlerConfig'] = array(
 	 *  String - The base URL of the website to crawl
 	 *  Include scheme/protocol and no trailing "/"
 	 */
-	"BASE_URL" => "http://www.cnn.com",
+	"BASE_URL" => "http://sheppardmedia.com",
 	
 	
 	/* "INIT_PATH" index
@@ -30,13 +30,13 @@ $GLOBALS['CrawlerConfig'] = array(
 	/* "AUTH" index
 	 * Array of login details
 	 * This array will be POSTed to the login endpoint after generating
-         * a query string using http_build_query()
+     * a query string using http_build_query()
 	 */
 	"AUTH" => array(),
 	
 	
 	/* "LOGIN_ENDPOINT" index
-	 * String - the relative path to start the session
+	 * String - the **relative** path to start the session
 	 * Login details will be POSTed here
 	 */
 	"LOGIN_ENDPOINT" => "",
@@ -54,18 +54,23 @@ $GLOBALS['CrawlerConfig'] = array(
 	 * Array of MySQL database access details 
 	 */
 	"PDO_CONFIG" => array(
-		"HOST" => "localhost",
+		"HOST" => "localhost", // If using Oracle, use "127.0.0.1" instead of "localhost"
 		"USER" => "root",
-		"PASS" => "bijoux22",
+		"PASS" => "",
 		"DB" => "crawler"
 	),
 	
+	
+	/* "DB_TYPE" index
+	 * either "MySQL" or "Oracle"
+	 */
+	"DB_TYPE" => "MySQL",	
 	
 	/* "CRAWLER_TABLE" index
 	 * String - The name of the table to store the results in
 	 * This table will be automatically generated if it does not exist
 	 */
-	"CRAWLER_TABLE" => "trump",
+	"CRAWLER_TABLE" => "pages",
 	
 	
 	/* "FOLLOW_LINKS_LIKE" index
@@ -73,7 +78,7 @@ $GLOBALS['CrawlerConfig'] = array(
 	 * Leave empty to follow all links
 	 * This is useful if you only want to crawl one domain
 	 */
-	"FOLLOW_LINKS_LIKE" => "trump",
+	"FOLLOW_LINKS_LIKE" => "sheppard",
 	
 	
 	/* "IGNORE_LINKS_LIKE" index
@@ -89,7 +94,7 @@ $GLOBALS['CrawlerConfig'] = array(
 	/* "SAVE_IMAGES" index
 	 * Boolean - Download images or not
 	 */
-	"SAVE_IMAGES" => true,
+	"SAVE_IMAGES" => false,
 	
 	
 	/* "MIN_INDEX_SIZE" index

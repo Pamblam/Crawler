@@ -13,6 +13,7 @@
  */
 class CrawlerRequest {
 	
+	
 	/* Hold the path to the cookie file
 	 */
 	private static $cookiejar;
@@ -47,7 +48,7 @@ class CrawlerRequest {
 	private static function setCookieJar(){
 		
 		// Create the file
-		$cj = realpath(dirname(__FILE__))."/tmp/cj".microtime();
+		$cj = tempnam("/tmp", "cj");
 		$fh = fopen($cj, "w+"); fclose($fh);
 		
 		// Save the cookiejar file
@@ -73,8 +74,7 @@ class CrawlerRequest {
 		$ch = curl_init();
 		$curlOpts = array(
 			CURLOPT_URL => $url,
-			CURLOPT_USERAGENT => 
-				'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0',
+			CURLOPT_USERAGENT =>'Crawler -- Just indexing!',
 			CURLOPT_SSL_VERIFYPEER => false,
 			CURLOPT_SSL_VERIFYHOST => false,
 			CURLOPT_RETURNTRANSFER => true,
@@ -113,6 +113,7 @@ class CrawlerRequest {
 		return $answer;
 	}
 	
+	
 	/* Returns the content type header returned by a given URL
 	 * @param $url - The URL to request
 	 * @param $params - array of params to be POSTed 
@@ -122,8 +123,7 @@ class CrawlerRequest {
 		$ch = curl_init();
 		$curlOpts = array(
 			CURLOPT_URL => $url,
-			CURLOPT_USERAGENT => 
-				'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0',
+			CURLOPT_USERAGENT => 'Crawler -- Just indexing!',
 			CURLOPT_SSL_VERIFYPEER => false,
 			CURLOPT_SSL_VERIFYHOST => false,
 			CURLOPT_RETURNTRANSFER => true,
@@ -181,7 +181,7 @@ class CrawlerRequest {
 		curl_setopt($curl, CURLOPT_HEADER, true);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0');
+		curl_setopt($curl, CURLOPT_USERAGENT, 'Crawler -- Just indexing!');
 
 		$data = curl_exec($curl);
 		curl_close($curl);

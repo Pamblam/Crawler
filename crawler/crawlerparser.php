@@ -191,6 +191,8 @@ class CrawlerParser{
 		// Make sure the URL isn't "#"
 		if(substr($url, 0, 1) == "#") return false;
 		
+		if(substr($url, 0, 2) == "//") $url = "http:".$url;
+		
 		// If it's already valid, nothing else needs to be done
 		if(filter_var($url, FILTER_VALIDATE_URL)) return $url;
 		
