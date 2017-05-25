@@ -23,7 +23,7 @@ if(isset($_GET['dbg'])){
 require_once("crawler/autoload.php");
 
 // Get the crawler instance
-$crawler = Crawler::getInstance(5); // will search for 5 seconds (plus any additional time it takes to process)
+$crawler = Crawler::getInstance(30); // will search for 5 seconds (plus any additional time it takes to process)
 
 // Let the class echo output as it works
 $crawler->dumpOutput = true;

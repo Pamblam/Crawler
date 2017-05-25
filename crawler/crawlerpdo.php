@@ -271,6 +271,29 @@ class CrawlerPDO{
 		return $linkedfrom;
 	}
 	
+	/**
+	 * Get nodes and edges to be used in a visualization
+	 */
+	public static function getNodesAndEdges(){
+		$db = self::pdo();
+		global $CrawlerConfig;
+		$q = $db->query("SELECT `id`, `title`, `linked_from` FROM {$CrawlerConfig['CRAWLER_TABLE']}");
+		$nodes = array();
+		$edges = array();
+		$x = 0; $nid=0;
+		while($res = $q->fetch(PDO::FETCH_ASSOC)){
+			$title = trim($res['title']);
+			$nodes[] = array("id"=>$res['id'], "label"=>empty($title)?"Untitled":$res['title'], "color"=> "rgb(90,90,90)", "size"=>100, "x"=>$x, "y"=>$x, "type"=>"tweetegy");
+			$conns = explode(",",$res['linked_from']);
+			foreach($conns as $conn){
+				if(empty($conn)) continue;
+				$edges[] = array("id"=>$nid, "source"=>$res['id'], "target"=>$conn);
+				$nid++;
+			}
+			$x++;
+		}
+		return array("edges"=>$edges, "nodes"=>$nodes);
+	}
 	
 	/* Updates a row in the table
 	 */
@@ -556,7 +579,7 @@ class CrawlerPDO{
 	
 	/* Search for a keyword in the crawler results
 	 */
-	public function doSearch($term){
+	public static function doSearch($term){
 		
 		// Get the global config
 		global $CrawlerConfig;
