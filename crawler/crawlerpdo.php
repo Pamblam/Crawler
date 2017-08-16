@@ -20,14 +20,19 @@ class CrawlerPDO{
 	/* Hold an array of URLs that are known to exist
 	 * prevents unneccesary checks
 	 */
-	private static $discovered = array();
+	private static $urls_discovered = array();
+	
+	/* Hold an array of emails that are known to exist
+	 * prevents unneccesary checks
+	 */
+	private static $emails_discovered = array();
 	
 	
 	/* The SQL to generate the table for MySQL.
 	 * The table name is replaced with whatever is in config.php
 	 */
 	const TABLE_SQL_MYSQL = '
-		CREATE TABLE IF NOT EXISTS `crawler` (
+		CREATE TABLE IF NOT EXISTS `crawler_urls` (
 			`id` int(11) NOT NULL,
 			`title` varchar(2000) NOT NULL,
 			`url` varchar(700) NOT NULL,
@@ -38,12 +43,25 @@ class CrawlerPDO{
 			`linked_from` varchar(500) NOT NULL,
 			`crawled` int(1) NOT NULL DEFAULT \'0\'
 		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+		
+		CREATE TABLE IF NOT EXISTS `crawler_emails` (
+			`id` int(11) NOT NULL,
+			`email` varchar(700) NOT NULL,
+			`url_ids` varchar(500) NOT NULL
+		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 			
-		ALTER TABLE `crawler`
+		ALTER TABLE `crawler_urls`
 			ADD PRIMARY KEY (`id`),
 			ADD UNIQUE KEY `url` (`url`);
+			
+		ALTER TABLE `crawler_emails`
+			ADD PRIMARY KEY (`id`),
+			ADD UNIQUE KEY `url` (`email`);
 
-		ALTER TABLE `crawler`
+		ALTER TABLE `crawler_urls`
+			MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+	
+		ALTER TABLE `crawler_emails`
 			MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;';
 	
 	
@@ -52,7 +70,7 @@ class CrawlerPDO{
 	 */
 	const TABLE_SQL_ORACLE = '
 		
-		CREATE TABLE crawler (
+		CREATE TABLE crawler_urls (
 			ID NUMBER(10,0) NOT NULL ENABLE,
 			TITLE VARCHAR2(2000) NOT NULL ENABLE,
 			URL VARCHAR2(2000) NOT NULL ENABLE,
@@ -62,11 +80,21 @@ class CrawlerPDO{
 			UPDATED NUMBER(10,0) NOT NULL ENABLE,
 			LINKED_FROM VARCHAR2(2000) NOT NULL ENABLE,
 			CRAWLED NUMBER(10,0) DEFAULT 0 NOT NULL ENABLE,
-			CONSTRAINT crawler_pk PRIMARY KEY (id),
-			CONSTRAINT crawler_uni UNIQUE (url)
+			CONSTRAINT crawler_url_pk PRIMARY KEY (id),
+			CONSTRAINT crawler_url_uni UNIQUE (url)
 		);
 		
-		CREATE SEQUENCE crawler_seq;';
+		CREATE SEQUENCE crawler_url_seq;
+		
+		CREATE TABLE crawler_emails (
+			ID NUMBER(10,0) NOT NULL ENABLE,
+			EMAIL VARCHAR2(700) NOT NULL ENABLE,
+			URL_IDS VARCHAR2(500) NOT NULL ENABLE,
+			CONSTRAINT crawler_email_pk PRIMARY KEY (id),
+			CONSTRAINT crawler_email_uni UNIQUE (url_ids)
+		);
+		
+		CREATE SEQUENCE crawler_email_seq;';
 	
 	
 	/* Get (and create if needed) the PDO connection
@@ -113,7 +141,7 @@ class CrawlerPDO{
 		if(empty($images)) return;
 		
 		$db = self::pdo();
-		$sql = "UPDATE {$CrawlerConfig['CRAWLER_TABLE']} SET mainimage = substr(:img, 1, 32767) WHERE url = :url";
+		$sql = "UPDATE {$CrawlerConfig['CRAWLER_URLS_TABLE']} SET mainimage = substr(:img, 1, 32767) WHERE url = :url";
 		$q = $db->prepare($sql);
 		
 		$imgs = array_unique($images);
@@ -150,8 +178,8 @@ class CrawlerPDO{
 		// Determine if table exists
 		try{
 			$SQL = $CrawlerConfig['DB_TYPE'] === "MySQL" ? 
-					"SELECT 1 FROM {$CrawlerConfig['CRAWLER_TABLE']} LIMIT 1" : 
-					"SELECT 1 FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE rownum = 0" ;
+					"SELECT 1 FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} LIMIT 1" : 
+					"SELECT 1 FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE rownum = 0" ;
 			$q = $db->query($SQL);
 			$tableExists = $q !== false;
 		}catch(PDOException $e){
@@ -177,8 +205,10 @@ class CrawlerPDO{
 			
 			// Generate the Create Table SQL
 			$SQL = $CrawlerConfig['DB_TYPE'] === "MySQL" ? self::TABLE_SQL_MYSQL : self::TABLE_SQL_ORACLE;
-			if($CrawlerConfig['CRAWLER_TABLE'] !== "crawler")
-				$SQL = str_replace("crawler", $CrawlerConfig['CRAWLER_TABLE'], $SQL);
+			if($CrawlerConfig['CRAWLER_URLS_TABLE'] !== "crawler_urls")
+				$SQL = str_replace("crawler_urls", $CrawlerConfig['CRAWLER_URLS_TABLE'], $SQL);
+			if($CrawlerConfig['CRAWLER_EMAILS_TABLE'] !== "crawler_emails")
+				$SQL = str_replace("crawler_emails", $CrawlerConfig['CRAWLER_EMAILS_TABLE'], $SQL);
 			
 			// Run SQL, one query at a time
 			$queries = explode(";", $SQL);
@@ -199,13 +229,12 @@ class CrawlerPDO{
 		}
 	}
 	
-	
-	/* Determines if a URL exists in the database
+	/* Determines if an email exists in the database
 	 */
-	public static function URLDiscovered($url){
+	public static function emailDiscovered($email){
 		
 		// Check if it's already been validated
-		if(in_array($url, self::$discovered)) return true;
+		if(in_array($url, self::$emails_discovered)) return true;
 		
 		// Get the global config
 		global $CrawlerConfig;
@@ -216,8 +245,45 @@ class CrawlerPDO{
 		$found = false;
 		try{
 			$SQL = $CrawlerConfig['DB_TYPE'] === "MySQL" ? 
-				"SELECT 1 FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url LIMIT 1" :
-				"SELECT 1 FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url AND rownum = 1" ;
+				"SELECT 1 FROM {$CrawlerConfig['CRAWLER_EMAILS_TABLE']} WHERE email = :email LIMIT 1" :
+				"SELECT 1 FROM {$CrawlerConfig['CRAWLER_EMAILS_TABLE']} WHERE email = :email AND rownum = 1" ;
+			$q = $db->prepare($SQL);
+			if($q !== false){
+				$z = $q->execute(array(":email"=>$email));
+				if($z !== false){
+					$f = $q->fetchAll(PDO::FETCH_ASSOC);
+					$found = !!count($f);
+				}
+				else $found = false;
+			}else $found = false;
+		}catch(PDOException $e){
+			$found = false;
+		}
+		
+		// If it's validated, add it to the array so we don't have to check again
+		if($found) array_push(self::$emails_discovered, $email);
+		
+		return $found;
+	}
+	
+	/* Determines if a URL exists in the database
+	 */
+	public static function URLDiscovered($url){
+		
+		// Check if it's already been validated
+		if(in_array($url, self::$urls_discovered)) return true;
+		
+		// Get the global config
+		global $CrawlerConfig;
+		
+		// Get the PDO object
+		$db = self::pdo();
+		
+		$found = false;
+		try{
+			$SQL = $CrawlerConfig['DB_TYPE'] === "MySQL" ? 
+				"SELECT 1 FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url LIMIT 1" :
+				"SELECT 1 FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url AND rownum = 1" ;
 			$q = $db->prepare($SQL);
 			if($q !== false){
 				$z = $q->execute(array(":url"=>$url));
@@ -232,11 +298,41 @@ class CrawlerPDO{
 		}
 		
 		// If it's validated, add it to the array so we don't have to check again
-		if($found) array_push(self::$discovered, $url);
+		if($found) array_push(self::$urls_discovered, $url);
 		
 		return $found;
 	}
 	
+	/* Returns a string of comma seperated numbers that represent the URLs that
+	 * link to the given email. If the second parameter is set, it will append
+	 * that value to the string as well.
+	 * @param String $email - The email to get
+	 * @param String $addlink - Adds the given link to the result
+	 */
+	public function getEmailURLs($email, $addlink=null){
+		// Get the global config
+		global $CrawlerConfig;
+		
+		// Get the PDO object
+		$db = self::pdo();
+		
+		// Get the value from the database
+		$q = $db->prepare("SELECT url_ids FROM {$CrawlerConfig['CRAWLER_EMAILS_TABLE']} WHERE email = :email");
+		$q->execute(array(":email"=>$email));
+		$res = $q->fetch(PDO::FETCH_ASSOC);
+		
+		$linkedfrom = $res['url_ids'];
+		if(empty($linkedfrom)) $linkedfrom = "";
+		
+		// Add the $addlink if it is passed
+		if(!empty($addlink)){
+			$lf = explode(",",$linkedfrom);
+			if(!in_array($addlink, $lf)) array_push($lf, $addlink);
+			$linkedfrom = implode(",",$lf);
+		}
+		
+		return $linkedfrom;
+	}
 	
 	/* Returns a string of comma seperated numbers that represent the URLs that
 	 * link to the given url. If the second parameter is set, it will append
@@ -244,7 +340,7 @@ class CrawlerPDO{
 	 * @param String $url - The URL to get
 	 * @param String $addlink - Adds the given link to the result
 	 */
-	public static function getLinkedFrom($url, $addlink=null){
+	public static function getURLLinkedFrom($url, $addlink=null){
 		
 		// Get the global config
 		global $CrawlerConfig;
@@ -253,7 +349,7 @@ class CrawlerPDO{
 		$db = self::pdo();
 		
 		// Get the value from the database
-		$q = $db->prepare("SELECT linked_from FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url");
+		$q = $db->prepare("SELECT linked_from FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url");
 		$q->execute(array(":url"=>$url));
 		$res = $q->fetch(PDO::FETCH_ASSOC);
 		
@@ -277,7 +373,7 @@ class CrawlerPDO{
 	public static function getNodesAndEdges(){
 		$db = self::pdo();
 		global $CrawlerConfig;
-		$q = $db->query("SELECT `id`, `title`, `linked_from` FROM {$CrawlerConfig['CRAWLER_TABLE']}");
+		$q = $db->query("SELECT `id`, `title`, `linked_from` FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']}");
 		$nodes = array();
 		$edges = array();
 		$x = 0; $nid=0;
@@ -295,9 +391,34 @@ class CrawlerPDO{
 		return array("edges"=>$edges, "nodes"=>$nodes);
 	}
 	
+	public function updateEmailRow($row){
+		
+		// Make sure the URL exists
+		if(!isset($row['email'])) die("Can't update a row without the email.");
+		
+		// Make sure the URL has been discovered first
+		if(!self::emailDiscovered($row['email'])) die("Can't update a row that was not discovered yet. {$row['email']}.");
+		
+		// Get the global config
+		global $CrawlerConfig;
+		
+		// Get the PDO object
+		$db = self::pdo();
+		
+		$params = array(
+			":email" => $row['email'],
+			":lf" => self::getEmailURLs($row['email'])
+		);
+		
+		$sql = "UPDATE {$CrawlerConfig['CRAWLER_EMAILS_TABLE']} SET url_ids = :lf WHERE email = :email";
+		$q = $db->prepare($sql)->execute($params);
+		
+		if($q === false) die("Could not update record.");
+	}
+	
 	/* Updates a row in the table
 	 */
-	public static function updateRow($row){
+	public static function updateURLRow($row){
 		
 		// Make sure the URL exists
 		if(!isset($row['url'])) die("Can't update a row without the URL.");
@@ -312,7 +433,7 @@ class CrawlerPDO{
 		$db = self::pdo();
 		
 		$lf = isset($row['linked_from']) ? $row['linked_from'] : 0;
-		$glf = self::getLinkedFrom($row['url'], $lf);
+		$glf = self::getURLLinkedFrom($row['url'], $lf);
 		$params = array(
 			":url" => $row['url'],
 			":title" => !empty($row['title']) ? $row['title'] : self::getParam($row['url'], 'title'),
@@ -335,14 +456,14 @@ class CrawlerPDO{
 			$params[':body'] = $filename;
 		}
 		
-		$sql = "UPDATE {$CrawlerConfig['CRAWLER_TABLE']} SET title = :title, body = :body, depth = :depth, updated = :updated, linked_from = :linked_from, crawled = :crawled WHERE url = :url";
+		$sql = "UPDATE {$CrawlerConfig['CRAWLER_URLS_TABLE']} SET title = :title, body = :body, depth = :depth, updated = :updated, linked_from = :linked_from, crawled = :crawled WHERE url = :url";
 		$q = $db->prepare($sql);
 		
 		try{
 			$z = $q->execute($params);
 		}catch(PDOException $e){
 			
-			$sql = "UPDATE {$CrawlerConfig['CRAWLER_TABLE']} SET updated = :updated, crawled = 1 WHERE url = :url";
+			$sql = "UPDATE {$CrawlerConfig['CRAWLER_URLS_TABLE']} SET updated = :updated, crawled = 1 WHERE url = :url";
 			$q = $db->prepare($sql);
 			$z = $q->execute(array(":updated"=>time(), ":url"=>$params[":url"]));
 			
@@ -363,20 +484,53 @@ class CrawlerPDO{
 		$here = realpath(dirname(__FILE__));
 				
 		// Get the filename
-		$q = $db->prepare("SELECT * FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url");
+		$q = $db->prepare("SELECT * FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url");
 		$q->execute(array(":url"=>$url));
 		$r = $q->fetch(PDO::FETCH_ASSOC);
 		
 		if($CrawlerConfig['DB_TYPE'] !== "MySQL" && file_exists("$here/blobs/{$r['body']}"))
 			unlink("$here/blobs/{$r['body']}");
 		
-		$q = $pdo->prepare("DELETE FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url");
+		$q = $pdo->prepare("DELETE FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url");
 		$q->execute(array(":url"=>$url));
 	}
 	
 	/* Inserts a row in the table
 	 */
-	public static function insertRow($row){
+	public static function insertEmailRow($row){
+		
+		// Make sure the URL exists
+		if(!isset($row['email'])) die("Can't insert a row without the email.");
+		
+		// Make sure the URL has been discovered first
+		if(self::emailDiscovered($row['email'])) die("Can't insert a row that was already discovered.");
+		
+		// Get the global config
+		global $CrawlerConfig;
+		
+		// Get the PDO object
+		$db = self::pdo();
+		
+		$SEQ = str_replace("crawler", $CrawlerConfig['CRAWLER_EMAILS_TABLE'], "crawler_email_seq");
+		
+		$params = array(
+			":email" => $row['email'],
+			":urlids" => $row['url_ids']
+		);
+		
+		$sql = $CrawlerConfig['DB_TYPE'] == "MySQL" ?
+			"INSERT INTO {$CrawlerConfig['CRAWLER_EMAILS_TABLE']} (email, url_ids) VALUES (:email, :urlids)" :
+			"INSERT INTO {$CrawlerConfig['CRAWLER_EMAILS_TABLE']} (id, email, url_ids) VALUES ($SEQ.NEXTVAL, :email, :urlids)" ;
+			
+		$q = $db->prepare($sql);
+		$z = $q->execute($params);
+		
+		if($z === false) die("Could not insert email.");
+	}
+	
+	/* Inserts a row in the table
+	 */
+	public static function insertURLRow($row){
 		
 		// Make sure the URL exists
 		if(!isset($row['url'])) die("Can't insert a row without the URL.");
@@ -390,7 +544,7 @@ class CrawlerPDO{
 		// Get the PDO object
 		$db = self::pdo();
 		
-		$SEQ = str_replace("crawler", $CrawlerConfig['CRAWLER_TABLE'], "crawler_seq");
+		$SEQ = str_replace("crawler", $CrawlerConfig['CRAWLER_URLS_TABLE'], "crawler_url_seq");
 		
 		$params = array(
 			":url" => $row['url'],
@@ -414,8 +568,8 @@ class CrawlerPDO{
 		}
 		
 		$sql = $CrawlerConfig['DB_TYPE'] == "MySQL" ?
-			"INSERT INTO {$CrawlerConfig['CRAWLER_TABLE']} (title, url, body, mainimage, depth, updated, linked_from) VALUES (:title, :url, :body, :img, :depth, :updated, :linked_from)" :
-			"INSERT INTO {$CrawlerConfig['CRAWLER_TABLE']} (id, title, url, body, mainimage, depth, updated, linked_from) VALUES ($SEQ.NEXTVAL, :title, :url, :body, :img, :depth, :updated, :linked_from)" ;
+			"INSERT INTO {$CrawlerConfig['CRAWLER_URLS_TABLE']} (title, url, body, mainimage, depth, updated, linked_from) VALUES (:title, :url, :body, :img, :depth, :updated, :linked_from)" :
+			"INSERT INTO {$CrawlerConfig['CRAWLER_URLS_TABLE']} (id, title, url, body, mainimage, depth, updated, linked_from) VALUES ($SEQ.NEXTVAL, :title, :url, :body, :img, :depth, :updated, :linked_from)" ;
 			
 		$q = $db->prepare($sql);
 		$z = $q->execute($params);
@@ -439,7 +593,7 @@ class CrawlerPDO{
 		$db = self::pdo();
 		
 		// Get and return the requested param
-		$q = $db->prepare("SELECT $param as param FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url");
+		$q = $db->prepare("SELECT $param as param FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url");
 		$q->execute(array(":url"=>$url));
 		$res = $q->fetch(PDO::FETCH_ASSOC);
 		return $res['param'];
@@ -460,7 +614,7 @@ class CrawlerPDO{
 		$db = self::pdo();
 		
 		// Get and return the ID
-		$q = $db->prepare("SELECT id FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url");
+		$q = $db->prepare("SELECT id FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url");
 		$q->execute(array(":url"=>$url));
 		$res = $q->fetch(PDO::FETCH_ASSOC);
 		return $res['id'];
@@ -469,7 +623,7 @@ class CrawlerPDO{
 	
 	/* Determines if the table is empty
 	 */
-	private static function isTableEmpty(){
+	private static function isURLTableEmpty(){
 		// Get the global config
 		global $CrawlerConfig;
 		
@@ -479,7 +633,7 @@ class CrawlerPDO{
 		// Return boolean
 		$ret = true;
 		
-		$q = $db->query("SELECT count(id) as cnt FROM {$CrawlerConfig['CRAWLER_TABLE']}");
+		$q = $db->query("SELECT count(id) as cnt FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']}");
 		if($q !== false){
 			$res = $q->fetch(PDO::FETCH_ASSOC);
 			if($res !== false) $ret = !($res['cnt'] > 0);
@@ -511,7 +665,7 @@ class CrawlerPDO{
 		 */
 		
 		// If the table is empty
-		if(self::isTableEmpty()){
+		if(self::isURLTableEmpty()){
 			
 			// Generate the starting row
 			$row = array(
@@ -523,7 +677,7 @@ class CrawlerPDO{
 				"linked_from" => 0
 			);
 			
-			self::insertRow($row);
+			self::insertURLRow($row);
 			array_push($ret, $row);
 		}
 		
@@ -531,7 +685,7 @@ class CrawlerPDO{
 		else{
 			
 			// Get all rows that have not been crawled
-			$q = $db->query("SELECT * FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE crawled = 0");
+			$q = $db->query("SELECT * FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE crawled = 0");
 			$ret = $q->fetchAll(PDO::FETCH_ASSOC);
 			
 			if($CrawlerConfig['DB_TYPE'] !== "MySQL"){
@@ -571,11 +725,25 @@ class CrawlerPDO{
 		$db = self::pdo();
 		
 		// Return the depth
-		$q = $db->prepare("SELECT depth FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE url = :url");
+		$q = $db->prepare("SELECT depth FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE url = :url");
 		$res = $q->fetch(PDO::FETCH_ASSOC);
 		return $res['depth'];
 	}
 	
+	public static function getAllEmails(){
+		
+		// Get the global config
+		global $CrawlerConfig;
+		
+		$pdo = self::pdo();
+		
+		$sql = 'SELECT email FROM '.$CrawlerConfig['CRAWLER_EMAILS_TABLE'];
+		$q = $pdo->prepare($sql);
+		$q->execute();
+		$return = array();
+		while($row = $q->fetch(PDO::FETCH_ASSOC)) $return[] = $row['email'];
+		return $return;
+	}
 	
 	/* Search for a keyword in the crawler results
 	 */
@@ -591,7 +759,7 @@ class CrawlerPDO{
 		// Get title results
 		$upperTermm = strtoupper($term);
 		
-		$sql = 'SELECT * FROM '.$CrawlerConfig['CRAWLER_TABLE'].' WHERE UPPER("TITLE") LIKE :t OR UPPER("URL") LIKE :u';
+		$sql = 'SELECT * FROM '.$CrawlerConfig['CRAWLER_URLS_TABLE'].' WHERE UPPER("TITLE") LIKE :t OR UPPER("URL") LIKE :u';
 		$q = $pdo->prepare($sql);
 		$q->execute(array(":t"=>"%$upperTermm%", ":u"=>"%$upperTermm%"));
 		
@@ -614,7 +782,7 @@ class CrawlerPDO{
 
 		// Get all crawled pages
 		
-		$q = $pdo->query("SELECT * FROM {$CrawlerConfig['CRAWLER_TABLE']} WHERE crawled = 1");
+		$q = $pdo->query("SELECT * FROM {$CrawlerConfig['CRAWLER_URLS_TABLE']} WHERE crawled = 1");
 		while($res = $q->fetch(PDO::FETCH_ASSOC)){
 			foreach($return as $r) if($r['url'] == $res['url']){
 				$r['match_score'] += count(explode(",", $res['linked_from']));

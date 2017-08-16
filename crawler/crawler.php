@@ -153,7 +153,7 @@ class Crawler {
 				$bn = array_pop(explode("/", $page['url'])); 
 				$this->addOutput("Skipping $bn - ($ctype).");
 				// Update the record for the page we just crawled
-				CrawlerPDO::updateRow(array(
+				CrawlerPDO::updateURLRow(array(
 					"title" => $page['title'],
 					"url" => $page['url'],
 					"body" => "skipped",
@@ -220,22 +220,38 @@ class Crawler {
 				"depth" => ($depth+1)
 			);
 			
+			// Loop through and check and add new emails
+			$emails = $parser->getEmails();
+			foreach($emails as $email){
+				
+				// If the email was already discovered
+				if(CrawlerPDO::emailDiscovered($email)){
+					CrawlerPDO::updateEmailRow(array(
+						"email" => $email,
+						"url_ids" => CrawlerPDO::getURLID($page['url'])
+					));
+				}else{
+					CrawlerPDO::insertEmailRow(array(
+						"email" => $email,
+						"url_ids" => CrawlerPDO::getURLID($page['url'])
+					));
+				}
+				
+			}
+			
 			// Loop thru and check and update or insert each new link
 			foreach($crawlResult['links'] as $link){
 				
 				// If the URL was already discovered
 				if(CrawlerPDO::URLDiscovered($link['url'])){
-					CrawlerPDO::updateRow(array(
+					CrawlerPDO::updateURLRow(array(
 						"title" => $link['title'],
 						"url" => $link['url'],
 						"linked_from" => CrawlerPDO::getURLID($page['url']),
 						"depth" => $crawlResult['depth']
 					));
-				}
-				
-				// If the URL was not discovered yet
-				else{
-					CrawlerPDO::insertRow(array(
+				}else{
+					CrawlerPDO::insertURLRow(array(
 						"url" => $link['url'],
 						"title" => $link['title'],
 						"linked_from" => CrawlerPDO::getURLID($page['url']),
@@ -246,7 +262,7 @@ class Crawler {
 			}
 			
 			// Update the record for the page we just crawled
-			CrawlerPDO::updateRow(array(
+			CrawlerPDO::updateURLRow(array(
 				"title" => $page['title'],
 				"url" => $page['url'],
 				"body" => $crawlResult['body'],

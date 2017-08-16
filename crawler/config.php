@@ -17,7 +17,7 @@ $GLOBALS['CrawlerConfig'] = array(
 	 *  String - The base URL of the website to crawl
 	 *  Include scheme/protocol and no trailing "/"
 	 */
-	"BASE_URL" => "http://sheppardmedia.com",
+	"BASE_URL" => "https://www.washingtonpost.com/",
 	
 	
 	/* "INIT_PATH" index
@@ -66,11 +66,17 @@ $GLOBALS['CrawlerConfig'] = array(
 	 */
 	"DB_TYPE" => "MySQL",	
 	
-	/* "CRAWLER_TABLE" index
+	/* "CRAWLER_URLS_TABLE" index
 	 * String - The name of the table to store the results in
 	 * This table will be automatically generated if it does not exist
 	 */
-	"CRAWLER_TABLE" => "pages",
+	"CRAWLER_URLS_TABLE" => "crawler_urls",
+	
+	/* "CRAWLER_EMAILS_TABLE" index
+	 * String - The name of the table to store emails in
+	 * This table will be automatically generated if it does not exist
+	 */
+	"CRAWLER_EMAILS_TABLE" => "crawler_emails",
 	
 	
 	/* "FOLLOW_LINKS_LIKE" index
@@ -78,7 +84,7 @@ $GLOBALS['CrawlerConfig'] = array(
 	 * Leave empty to follow all links
 	 * This is useful if you only want to crawl one domain
 	 */
-	"FOLLOW_LINKS_LIKE" => "sheppard",
+	"FOLLOW_LINKS_LIKE" => "washingtonpost",
 	
 	
 	/* "IGNORE_LINKS_LIKE" index

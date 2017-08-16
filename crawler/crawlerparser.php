@@ -35,6 +35,13 @@ class CrawlerParser{
 		$this->current_location = self::trimUrl($current_location);
 	}
 	
+	public function getEmails(){
+		$emails = array();
+		$r = '`\<a([^>]+)href\=\"mailto\:([^">]+)\"([^>]*)\>(.*?)\<\/a\>`ism';
+		preg_match_all($r, $this->html, $matches, PREG_SET_ORDER);
+		foreach($matches as $match) $emails[] = $match[2];
+		return $emails;
+	}
 	
 	public function getImages(){
 		

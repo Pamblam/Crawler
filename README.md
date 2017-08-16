@@ -4,9 +4,11 @@ Crawler is a highly flexible PHP web crawler library with a few cool features.
 
 ### Features
  - Can log into a website to crawl pages that require authentication.
- - Uses a single table in a MySQL database to store crawled website data, and creates the table automatically the first time the crawler is run.
+ - Uses two table in a MySQL or Oracle database to store crawled website data, and creates the table automatically the first time the crawler is run.
  - Can be configured to skip pages that match a given string.
  - Saves body text with all HTML stripped for easy searching.
+ - Mines Emails
+ - Browser based UI & CLI isage
 
 ### Usage
  1. Download and unzip the source files.
@@ -23,7 +25,7 @@ The crawler/config.php file needs to be populated before trying to crawl any web
  - **LOGIN_ENDPOINT** – String – the relative path to start the session. Login details will be POSTed here.
  - **FAILED_LOGIN_INDICATOR** – String – A unique string that ONLY appears on the failed login response If this string is found in the response after attempting logging in, the script assumes that login failed and exits.
  - **PDO_CONFIG** – Array of MySQL database access details, including host, username, password, database.
- - **CRAWLER_TABLE** – The name of the table to store the results in. This table will be automatically generated with this name the first time you run the script.
+ - **CRAWLER_URLS_TABLE** – The name of the table to store the results in. This table will be automatically generated with this name the first time you run the script.
  - **FOLLOW_LINKS_LIKE** – Only follow links that contain this substring. Leave empty to follow all links. This is useful if you only want to crawl one domain.
  - **IGNORE_LINKS_LIKE** – Array of strings. If any of the links match or contain any of these strings, they will be ignored.
 
@@ -33,14 +35,6 @@ The crawler/config.php file needs to be populated before trying to crawl any web
 ### Legal
 Released under [Apache 2.0] License - Copywrite 2016 Robert Parham, All rights reserved.
 
-### Website
-[http://blog.geneticcoder.com/2015/11/01/a-highly-flexible-php-web-crawler-library/]
-
-### Author
-The amazing, wonderful [Robert Parham].
-
    [Apache 2.0]: <http://www.apache.org/licenses/LICENSE-2.0>
-   [http://blog.geneticcoder.com/2015/11/01/a-highly-flexible-php-web-crawler-library/]: <http://blog.geneticcoder.com/2015/11/01/a-highly-flexible-php-web-crawler-library/>
-   [Robert Parham]: <http://geneticcoder.com/>
 
 
