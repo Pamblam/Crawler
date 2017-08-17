@@ -130,6 +130,10 @@ class Crawler {
 		return $ret;
 	}
 	
+	public function isCrawling(){
+		$instance = CrawlerPDO::getInstance();
+		return 0 != $instance['running'];
+	}
 	
 	/* Starts the process of crawling the URLs in the queue
 	 * @param int $max_depth - if zero, crawls until it can't find any more links
@@ -139,6 +143,9 @@ class Crawler {
 	 *   refreshed.
 	 */
 	public function crawl($max_depth=0, $current_depth=0){
+		
+		if($this->isCrawling) return;
+		CrawlerPDO::updateInstance(array("running" => 1));
 		
 		// Begin the loop through each URL row
 		foreach($this->queue as $k=>$page){
@@ -271,6 +278,8 @@ class Crawler {
 			
 			// pop this item off the queue
 			unset($this->queue[$k]);
+			
+			CrawlerPDO::updateInstance(array("running" => 0));
 		}
 		
 		// Queue is empty!

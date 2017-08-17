@@ -1,21 +1,6 @@
 # Crawler
 
-Crawler is a highly flexible PHP web crawler library with a few cool features.
-
-### Features
- - Can log into a website to crawl pages that require authentication.
- - Uses two table in a MySQL or Oracle database to store crawled website data, and creates the table automatically the first time the crawler is run.
- - Can be configured to skip pages that match a given string.
- - Saves body text with all HTML stripped for easy searching.
- - Mines Emails
- - Browser based UI & CLI isage
-
-### Usage
- 1. Download and unzip the source files.
- 2. Open /crawler/config.php and add your configuration details. (see below)
- 3. Upload the files to your server and run
- 4. To start crawling, run doCrawl.php in your in your browser or console, or to continue crawling indefinitely, open search.php in the browser and click the “crawl” button in the top right.
- 5. After you’ve crawled some pages you can search the results via the search.php script.
+in between major updates.. new instructions coming soon...
 
 ### Configuration
 The crawler/config.php file needs to be populated before trying to crawl any websites. This is an explanation of the options.

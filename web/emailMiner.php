@@ -64,6 +64,7 @@
 					</div>
 					<center>
 						<a class='btn btn-primary' href="index.php">Search</a>
+						<a class='btn btn-primary' href="doCrawl.php">Do Crawl</a>
 					</center>
                 </div>
             </div>

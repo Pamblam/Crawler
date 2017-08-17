@@ -14,7 +14,7 @@ function CrawlerAutoload(){
 	
 	// Array of required files
 	$required = array(
-		"config.php",
+		"crawlerconfig.php",
 		"crawlerrequest.php",
 		"crawlerpdo.php",
 		"crawlerparser.php",

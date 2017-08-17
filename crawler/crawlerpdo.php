@@ -40,6 +40,12 @@ class CrawlerPDO{
 			`crawled` int(1) NOT NULL DEFAULT \'0\'
 		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 		
+		CREATE TABLE IF NOT EXISTS `crawler_instances` (
+			`name` varchar(100) NOT NULL,
+			`running` int(1) NOT NULL DEFAULT \'0\',
+			`kill` int(1) NOT NULL DEFAULT \'0\'
+		) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+		
 		CREATE TABLE IF NOT EXISTS `crawler_emails` (
 			`id` int(11) NOT NULL,
 			`email` varchar(700) NOT NULL,
@@ -53,6 +59,9 @@ class CrawlerPDO{
 		ALTER TABLE `crawler_emails`
 			ADD PRIMARY KEY (`id`),
 			ADD UNIQUE KEY `url` (`email`);
+			
+		ALTER TABLE `crawler_instances`
+			ADD UNIQUE KEY `name` (`name`);
 
 		ALTER TABLE `crawler_urls`
 			MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
@@ -78,6 +87,13 @@ class CrawlerPDO{
 			CRAWLED NUMBER(10,0) DEFAULT 0 NOT NULL ENABLE,
 			CONSTRAINT crawler_url_pk PRIMARY KEY (id),
 			CONSTRAINT crawler_url_uni UNIQUE (url)
+		);
+		
+		CREATE TABLE crawler_instances (
+			NAME VARCHAR2(100) NOT NULL ENABLE,
+			RUNNING NUMBER(10,0) DEFAULT 0 NOT NULL ENABLE,
+			KILL NUMBER(10,0) DEFAULT 0 NOT NULL ENABLE,
+			CONSTRAINT crawler_instane_uni UNIQUE (name)
 		);
 		
 		CREATE SEQUENCE crawler_url_seq;
@@ -159,7 +175,41 @@ class CrawlerPDO{
 		}
 		
 	}
-			
+	
+	public static function updateInstance($params){
+		
+		// Get the global config
+		global $CrawlerConfig;
+		
+		// Get the PDO object
+		$db = self::pdo();
+		
+		$sql = "update {$CrawlerConfig['CRAWLER_INSTANCES_TABLE']} set ";
+		$p = array();
+		foreach($params as $k=>$v){
+			$sql .= "$k = ?, ";
+			$p[] = $v;
+		}
+		$sql = trim($sql, " ,")." where name = ?";
+		$p[] = $CrawlerConfig['INI_NAME'];
+		$q = $db->prepare($sql);
+		$q->execute($p);
+	}
+	
+	// Get instance info
+	public static function getInstance(){
+		
+		// Get the global config
+		global $CrawlerConfig;
+		
+		// Get the PDO object
+		$db = self::pdo();
+		
+		$q = $db->prepare("select * from {$CrawlerConfig['CRAWLER_INSTANCES_TABLE']} where name = ?");
+		$q->execute(array($CrawlerConfig['INI_NAME']));
+		return $q->fetch(PDO::FETCH_ASSOC);
+	}
+	
 	/* Checks to see if the crawler table exists
 	 * @return boolean
 	 */
@@ -205,6 +255,8 @@ class CrawlerPDO{
 				$SQL = str_replace("crawler_urls", $CrawlerConfig['CRAWLER_URLS_TABLE'], $SQL);
 			if($CrawlerConfig['CRAWLER_EMAILS_TABLE'] !== "crawler_emails")
 				$SQL = str_replace("crawler_emails", $CrawlerConfig['CRAWLER_EMAILS_TABLE'], $SQL);
+			if($CrawlerConfig['CRAWLER_INSTANCES_TABLE'] !== "crawler_instances")
+				$SQL = str_replace("crawler_instances", $CrawlerConfig['CRAWLER_INSTANCES_TABLE'], $SQL);
 			
 			// Run SQL, one query at a time
 			$queries = explode(";", $SQL);

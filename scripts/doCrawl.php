@@ -16,10 +16,11 @@ if(isset($_GET['dbg'])){
 }
 
 // require the crawler
-require_once("crawler/autoload.php");
+require_once(realpath(dirname(dirname(__FILE__)))."/crawler/autoload.php");
 
 // Get the crawler instance
-$crawler = Crawler::getInstance(30); // will search for 5 seconds (plus any additional time it takes to process)
+$time_imit = isset($_GET['time']) ? $_GET['time'] : 30;
+$crawler = Crawler::getInstance($time_imit); 
 
 // Let the class echo output as it works
 $crawler->dumpOutput = true;
