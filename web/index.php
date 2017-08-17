@@ -5,7 +5,7 @@
  */
 
 /*******************************************************************************
- * This is a simple page to display the mined emails
+ * This is a basic search page used to search the crawler results
  ******************************************************************************/
 -->
 <!DOCTYPE html>
@@ -18,11 +18,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="Search Crawler Results">
         <meta name="author" content="Rob Parham">
-        <title>Crawler Email Miner</title>
+        <title>Crawler Search</title>
         
         <!-- styles -->
         <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" rel="stylesheet">
-        <link href="css/common.css" rel="stylesheet">
+		<link href="css/common.css" rel="stylesheet">
         
         <!-- HTML5 Shim and Respond.js -->
         <!--[if lt IE 9]>
@@ -31,19 +31,6 @@
         <![endif]-->
     </head>
     <body style='background:#fff;'>
-        
-        <!-- navbar -->
-        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation" style="background:#F1F1F1; border:0;">
-            <div class="container">
-                <div class="navbar-header">
-                    <a class="navbar-brand" href="./">
-						<span class="google-logo-sm">
-							<span class="google-G">C</span><span class="google-o1">r</span><span class="google-o2">a</span><span class="google-g">w</span><span class="google-l">l</span><span class="google-e">e</span><span class="google-o2">r</span>
-						</span>
-					</a>
-                </div>
-            </div>
-        </nav>
         
         <!-- page content -->
         <div class="container">
@@ -59,12 +46,26 @@
 			
 			<div class="row">
                 <div class="col-lg-12">
-					<div id='results'>
-						Mining crawled pages for emails... please wait..
-					</div>
 					<center>
-						<a class='btn btn-primary' href="index.php">Search</a>
+						
+						<form method='POST' id='sform' action='search.php' style='display:block'>
+
+
+							<div class="input-group">
+								<input type="text" class="form-control" id='sinput' placeholder="Search for...">
+								<span class="input-group-btn">
+									<button class="btn btn-default btn-primary" type="submit" id="sbtn"><span class="glyphicon glyphicon-search"></span></button>
+								</span>
+
+							</div>
+							<small style="float:right; padding-top:5px;">Press Enter to Search</small>
+						</form>
+						<Br>
+						
+						<a class='btn btn-primary' href="emailMiner.php">Email Miner</a>
+						
 					</center>
+					<div id='results'></div>
                 </div>
             </div>
         </div>
@@ -73,6 +74,6 @@
         <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
         <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 		<script src="js/functions.js"></script>
-		<script src='js/emailMiner.js'></script>
+		<script src="js/index.js"></script>
     </body>
 </html>

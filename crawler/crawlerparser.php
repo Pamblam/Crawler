@@ -1,10 +1,6 @@
 <?php
-/* Crawler - A website indexer.
- * -Can log into a website, 
- * -Crawls a website,
- * -Saves data to database
- * -Saves Page title, URL, Body text, and depth level
- * @author Robert Parham <adelphia at protonmail dot ch>
+/* Crawler - A website indexer (and stuff)
+ * @author Robert Parham
  * @license Apache 2.0 Lic.
  */
 

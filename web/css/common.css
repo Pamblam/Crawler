@@ -1,0 +1,66 @@
+/* Crawler - A website indexer (and stuff)
+ * @author Robert Parham
+ * @license Apache 2.0 Lic.
+ */
+
+body { padding-top: 70px; /* adjust for the navbar */ }
+.resdiv:hover{
+	border-left:2px solid blue;
+	padding-left:8px;
+}
+.resdiv{
+	border-left:0;
+	padding-left:10px;
+	padding-bottom: 25px;
+}
+@-moz-font-face { 
+	font-family: Catull; 
+	src: url(../font/Catull.ttf); 
+	font-weight:400; 
+}
+@-webkit-font-face { 
+	font-family: Catull; 
+	src: url(../font/Catull.ttf); 
+	font-weight:400; 
+}
+@-o-font-face { 
+	font-family: Catull; 
+	src: url(../font/Catull.ttf); 
+	font-weight:400; 
+}
+@-ms-font-face { 
+	font-family: Catull; 
+	src: url(../font/Catull.ttf); 
+	font-weight:400; 
+}
+@font-face { 
+	font-family: Catull; 
+	src: url(../font/Catull.ttf); 
+	font-weight:400; 
+}
+.google-logo {
+	font-family: Catull,Sans-Serif;
+	font-size: 50px;
+}
+.google-logo-sm {
+	font-family: Catull,Sans-Serif;
+	font-size: 25px;
+}
+.google-G { 
+	color:#0047F1; 
+}
+.google-o1 { 
+	color:#DD172C; 
+}
+.google-o2 { 
+	color:#F9A600; 
+}
+.google-g { 
+	color:#0047F1; 
+}
+.google-l { 
+	color:#00930E; 
+}
+.google-e { 
+	color:#E61B31; 
+}
