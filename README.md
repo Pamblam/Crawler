@@ -1,6 +1,8 @@
 # Crawler
 
-in between major updates.. new instructions coming soon...
+I am not currently developing any further on this project. If you want to check out the latest working version of this, please check [here](https://github.com/Pamblam/Crawler/tree/612baf4eedcb23df3a3e333d6c03855d6922b735). You might also consider looking at one of the forks of this repo. If anyone wants to submit a PR, please do, otherwise I may or may not eventually get around to finishing the updated I started over a year ago.. and yes, I've learned my lesson about not branching off before starting new updates.
+
+Sorry for any inconvenience.
 
 ### Configuration
 The crawler/config.php file needs to be populated before trying to crawl any websites. This is an explanation of the options.
